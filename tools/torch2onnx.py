@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
 
 import torch
 import numpy as np
-from volksdep.converters import torch2onnx
+from volksdep import torch2onnx
 
 from vedastr.runners import InferenceRunner
 from vedastr.utils import Config
