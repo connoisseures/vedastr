@@ -1,8 +1,8 @@
 import cv2, torch, onnxruntime, re
 import numpy as np
-import torch.nn.functional as F
 
-class OnnxSATRN:
+
+class OnnxSatrnWoSoftmax:
     def __init__(self, model_path):
         self.log_header = '[{}]'.format(type(self).__name__)
         self.logs = ''
@@ -43,7 +43,7 @@ class OnnxSATRN:
         ort_outs = self.ort_session.run(None, ort_inputs)
 
         # to be removed
-        preds = torch.as_tensor(ort_outs[0])
+        preds = torch.as_tensor(ort_outs)
 
         pred, prob = self.postprocess(preds)
         print(pred)
@@ -51,13 +51,14 @@ class OnnxSATRN:
         return pred, prob
 
     def postprocess(self, preds):
-        # to be removed, put the softmax into the onnx model
-        probs = F.softmax(preds, dim=2)
-        max_probs, indexes = probs.max(dim=2)
+        # the softmax layer is integrated into the onnx model
+        # shape: [1, 26], [1, 26]
+        max_probs, indexes = preds[1], preds[0]
 
         preds_str = []
         preds_prob = []
         for i, pstr in enumerate(self.decode(indexes)):
+            i = int(i)
             str_len = len(pstr)
             if str_len == 0:
                 prob = 0
@@ -82,7 +83,7 @@ class OnnxSATRN:
         batch_size = 1
 
         for index in range(batch_size):
-            text = ''.join([self.character_list[i] for i in text_index[index, :]])
+            text = ''.join([self.character_list[int(i)] for i in text_index[index, :]])
             text = text[:text.find('[s]')]
             texts.append(text)
 
@@ -137,10 +138,9 @@ class OnnxSATRN:
 
 
 if __name__ == '__main__':
-    onnx_path = '../onnx/satrn.onnx'
-    satrn = OnnxSATRN(onnx_path)
+    onnx_path = '../pool_onnx_models/satrn_wi_softmax.onnx'
+    satrn = OnnxSatrnWoSoftmax(onnx_path)
 
-    # image_path = '../test_images/ssn00001_sub12.png'
     image_path = '../test_images/ssn00001_sub13.png'
     img = cv2.imread(image_path)
 
