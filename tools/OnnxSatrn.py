@@ -29,25 +29,37 @@ class OnnxSatrnWoSoftmax:
         list_token = ['[s]', '[GO]']
         self.character_list = list(self.character) + list_token
 
+        # time meter
+        self.tickmeter = cv2.TickMeter()
+
     def to_log(self, log):
         log = self.log_header + log
         if self.is_verbose:
             print(log)
         self.logs += log
 
+    def get_time_meter(self):
+        self.tickmeter.reset()
+        self.tickmeter.start()
+
+    def get_time_cost(self, log):
+        self.tickmeter.stop()
+        time_preprocess = self.tickmeter.getTimeMilli()
+        self.to_log('time cost, ms, (' + log + ') = ' + str(time_preprocess))
+        return time_preprocess
+
     def infer(self, frame):
+        self.get_time_meter()
         img = self.preprocess(frame)
         # compute ONNX Runtime output prediction
         img = img.tolist()
+        self.get_time_cost('preprocess')
+
+        self.get_time_meter()
         ort_inputs = {self.input_name: [img]}
         ort_outs = self.ort_session.run(None, ort_inputs)
-
-        # to be removed
-        preds = torch.as_tensor(ort_outs)
-
-        pred, prob = self.postprocess(preds)
-        print(pred)
-        print(prob)
+        pred, prob = self.postprocess(ort_outs)
+        self.get_time_cost('onnx running')
         return pred, prob
 
     def postprocess(self, preds):
@@ -64,7 +76,9 @@ class OnnxSatrnWoSoftmax:
                 prob = 0
             else:
                 # prob = product of each char's probability
-                prob = max_probs[i, :str_len].cumprod(dim=0)[-1]
+                prob = self.cal_word_probability(max_probs[0], str_len)
+                # for a tensor
+                # prob = max_probs[i, :str_len].cumprod(dim=0)[-1]
                 # https://numpy.org/doc/stable/reference/generated/numpy.cumprod.html
             preds_prob.append(prob)
             if not self.sensitive:
@@ -89,6 +103,11 @@ class OnnxSatrnWoSoftmax:
 
         return texts
 
+    def cal_word_probability(self, char_prob, end):
+        prob = 1
+        for i in range(end):
+            prob *= char_prob[i]
+        return prob
 
     def preprocess(self, frame):
         gray = self.to_gray(frame)
@@ -140,11 +159,13 @@ class OnnxSatrnWoSoftmax:
 if __name__ == '__main__':
     onnx_path = '../pool_onnx_models/satrn_wi_softmax.onnx'
     satrn = OnnxSatrnWoSoftmax(onnx_path)
-
+    satrn.is_verbose = True
     image_path = '../test_images/ssn00001_sub13.png'
     img = cv2.imread(image_path)
 
-    satrn.infer(img)
+    pred, prob = satrn.infer(img)
+    print(pred)
+    print(prob)
 
 
 
