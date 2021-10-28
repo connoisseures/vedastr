@@ -87,6 +87,9 @@ class InferenceRunner(Common):
             dummy_text = ''
             aug = self.transform(image=image, label=dummy_text)
             image, text = aug['image'], aug['label']
+            # image is gray and is a tensor with shape = (1, 32, 100)
+
+            # torch.Size([1, 32, 100]) -> torch.Size([1, 1, 32, 100])
             image = image.unsqueeze(0)
             label_input, label_length, label_target = self.converter.test_encode([text])
             if self.use_gpu:
