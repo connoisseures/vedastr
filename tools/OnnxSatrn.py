@@ -2,7 +2,7 @@ import cv2, torch, onnxruntime, re
 import numpy as np
 
 
-class OnnxSatrnWoSoftmax:
+class OnnxSatrn:
     def __init__(self, model_path):
         self.log_header = '[{}]'.format(type(self).__name__)
         self.logs = ''
@@ -157,8 +157,8 @@ class OnnxSatrnWoSoftmax:
 
 
 if __name__ == '__main__':
-    onnx_path = '../pool_onnx_models/satrn_wi_softmax.onnx'
-    satrn = OnnxSatrnWoSoftmax(onnx_path)
+    onnx_path = '../onnx/satrn.onnx'
+    satrn = OnnxSatrn(onnx_path)
     satrn.is_verbose = True
     image_path = '../test_images/ssn00001_sub13.png'
     img = cv2.imread(image_path)
