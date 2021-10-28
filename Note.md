@@ -20,5 +20,10 @@ Design Note
 - add softmax layer in the output when exporting onnx model
     - https://github.com/connoisseures/vedastr/blob/master/vedastr/models/model.py#L34
 
+### export onnx 
+- input/output
+    - input names: ['input.0']
+    - output names: ['output.0']
+
 
 
