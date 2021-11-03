@@ -58,9 +58,9 @@ class OnnxSatrn:
         self.get_time_meter()
         ort_inputs = {self.input_name: [img]}
         ort_outs = self.ort_session.run(None, ort_inputs)
-        pred, prob = self.postprocess(ort_outs)
+        pred, prob, each_max_prob = self.postprocess(ort_outs)
         self.get_time_cost('onnx running')
-        return pred, prob
+        return pred, prob, each_max_prob
 
     def postprocess(self, preds):
         # the softmax layer is integrated into the onnx model
@@ -69,6 +69,7 @@ class OnnxSatrn:
 
         preds_str = []
         preds_prob = []
+        preds_each_max_probs = []
         for i, pstr in enumerate(self.decode(indexes)):
             i = int(i)
             str_len = len(pstr)
@@ -81,6 +82,7 @@ class OnnxSatrn:
                 # prob = max_probs[i, :str_len].cumprod(dim=0)[-1]
                 # https://numpy.org/doc/stable/reference/generated/numpy.cumprod.html
             preds_prob.append(prob)
+            preds_each_max_probs.append(max_probs[0][:str_len])
             if not self.sensitive:
                 pstr = pstr.lower()
 
@@ -89,7 +91,7 @@ class OnnxSatrn:
 
             preds_str.append(pstr)
 
-        return preds_str, preds_prob
+        return preds_str, preds_prob, preds_each_max_probs
 
     def decode(self, text_index):
         texts = []
