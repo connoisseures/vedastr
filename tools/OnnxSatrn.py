@@ -48,6 +48,28 @@ class OnnxSatrn:
         self.to_log('time cost, ms, (' + log + ') = ' + str(time_preprocess))
         return time_preprocess
 
+    def cal_hit_score(self, max_prop, is_1st_char_skipped=False):
+        # consider the word with more than 5 chars
+        if len(max_prop) < 5:
+            return 1
+        size = len(max_prop)
+        score = 0
+        for i in range(size):
+            if is_1st_char_skipped and i == 0:
+                print('skip 1st char')
+                continue
+            prob = max_prop[i]
+            if prob > 0.9:
+                score += 1
+            elif prob > 0.75:
+                score += 0.5
+            elif prob > 0.6:
+                score += 0
+            else:
+                score += -1
+        print(str(score) + ' / ' + str(size))
+        return score * 1.0 / size
+
     def infer(self, frame):
         self.get_time_meter()
         img = self.preprocess(frame)
@@ -61,6 +83,19 @@ class OnnxSatrn:
         pred, prob, each_max_prob = self.postprocess(ort_outs)
         self.get_time_cost('onnx running')
         return pred, prob, each_max_prob
+
+    def recognize(self, frame):
+        pred, prob, each_max_prob = self.infer(frame)
+        return pred[0]
+
+    def recognize_wi_prob(self, frame):
+        pred, prob, each_max_prob = self.infer(frame)
+        return pred[0], each_max_prob[0]
+
+    def recognize_wi_hit_score(self, frame, is_1st_char_skipped=False):
+        pred, prob, each_max_prob = self.infer(frame)
+        hit_score = self.cal_hit_score(each_max_prob[0], is_1st_char_skipped=is_1st_char_skipped)
+        return pred[0], hit_score
 
     def postprocess(self, preds):
         # the softmax layer is integrated into the onnx model
