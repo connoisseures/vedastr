@@ -1,0 +1,1 @@
+vedastr_root=${PWD}

@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
 
 import torch
 import numpy as np
-from volksdep import torch2onnx
+from volksdep.torch2onnx import torch2onnx
 
 from vedastr.runners import InferenceRunner
 from vedastr.utils import Config
@@ -60,6 +60,7 @@ def main():
     need_text = runner.need_text
     if not need_text:
         dummy_input = dummy_input[0]
+    dummy_input = torch.randn(1, 3, 32, 100, requires_grad=True)
 
     if args.dynamic_shape:
         print(
@@ -80,7 +81,7 @@ def main():
         verbose=args.verbose,
         dynamic_shape=args.dynamic_shape,
         opset_version=args.opset_version,
-        do_constant_folding=args.do_constant_folding,
+        do_constant_folding=False,
     )
 
     runner.logger.info(
